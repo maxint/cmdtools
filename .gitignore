@@ -1,0 +1,7 @@
+*.exe
+*.zip
+*.CHM
+*.CNT
+*.HLP
+*.lnk
+.ropeproject
