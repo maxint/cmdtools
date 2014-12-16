@@ -5,3 +5,4 @@
 *.HLP
 *.lnk
 .ropeproject
+/*.pyc
