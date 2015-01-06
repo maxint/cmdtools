@@ -70,7 +70,7 @@ def check_tag(name):
     return checkrun(cmd)
 
 
-def commit(src, dst, message, version=None, dryrun=False):
+def do(src, dst, message, version=None, dryrun=False, verbose=0):
     print 'Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
 
     def run(cmd):
@@ -84,7 +84,7 @@ def commit(src, dst, message, version=None, dryrun=False):
     run('git checkout ' + dst)
 
     if message:
-        if dryrun:
+        if dryrun and verbose > 0:
             print message
         else:
             open(COMMIT_LOG, 'wt').write(message)
@@ -135,7 +135,8 @@ def main(**args):
         else:
             message = slog
 
-    return commit(src, dst, message, version, args.get('dryrun'))
+    return do(src, dst, message, version,
+              args.get('dryrun'), args.get('verbose'))
 
 
 if __name__ == '__main__':
@@ -143,17 +144,19 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Merge and commit git to svn')
     parser.add_argument('--src', '-s', nargs='?', default='dev',
-                        help='source branch or version')
+                        help='source branch or version [dev]')
     parser.add_argument('--dst', nargs='?', default='master',
-                        help='destination branch attached with svn')
+                        help='destination branch attached with svn [master]')
     parser.add_argument('--message', '-m', nargs='?', default=None,
                         help='commit message')
     parser.add_argument('--dryrun', '-d', action='store_true',
                         help='do not run command')
+    parser.add_argument('--verbose', '-V', type=int, nargs='?', default=0,
+                        help='mesage verbose mode, default is 0')
     parser.add_argument('--version', nargs='?', default=None,
                         help='version info, parsed from git log if None')
     parser.add_argument('--tag', '-t', action='store_true', default=False,
-                        help='create git and svn tag')
+                        help='create git and svn tag, disabled by default')
     args = parser.parse_args()
 
     main(**vars(args))
