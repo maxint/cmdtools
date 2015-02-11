@@ -24,9 +24,11 @@ def runout(cmd):
 
 def create_svn_layout(url, msg):
     try:
-        cmd = 'svn mkdir {0}/trunk {0}/branches {0}/tags'.format(url)
+        cmd = 'svn mkdir {0} {0}/trunk {0}/branches {0}/tags'.format(url)
         cmd += ' -m "' + msg + '" --parents'
         run(cmd, 'svn mkdir %s/{trunk,branches,tags}' % url)
+    except subprocess.CalledProcessError:
+        pass
     finally:
         pass
 
@@ -34,17 +36,21 @@ def create_svn_layout(url, msg):
 def create_svn(url):
     try:
         run('svnadmin create ' + url)
+    except subprocess.CalledProcessError:
+        pass
     finally:
-        create_svn_layout(url, 'Add new project')
+        create_svn_layout(url, 'Add new project (%s)' % url)
 
 
 def create_git(url):
     try:
         run('git init')
+    except subprocess.CalledProcessError:
+        pass
     finally:
         run('git svn init -s ' + url)
         run('git svn fetch')
-        run('git svn rebase')
+        # run('git svn rebase')
 
 
 def main(url):
