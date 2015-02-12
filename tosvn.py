@@ -14,11 +14,17 @@ import subprocess
 import os
 import re
 
-COMMIT_LOG = 'commit.log'
+dryrun = False
 
 
 def runout(cmd):
     return subprocess.check_output(cmd)
+
+
+def run(cmd):
+    print cmd
+    if not dryrun:
+        return subprocess.check_call(cmd)
 
 
 def svn_url(branch):
@@ -35,20 +41,24 @@ def get_version(s):
         return 'v{}.{}.{}'.format(m[0], m[1], m[2])
 
 
-def get_last_commit(s):
-    m = re.search(r'\bcommit (\S+)\b', s).groups()
-    return m[0]
+def git_last_commit(branch):
+    cmd = 'git log {} -1 --format="%H"'.format(branch)
+    return runout(cmd).strip()
 
 
-def get_squash_log(src, dst):
-    cmd = 'git log {} -1 --format="%B"'.format(dst)
-    last_sha1 = get_last_commit(runout(cmd))
-    cmd = 'git log "{}".."{}" --format=short --graph'.format(last_sha1, src)
+def git_commits(start, end):
+    cmd = 'git log {}..{} --reverse --format=%H'.format(start, end)
+    return runout(cmd).split()
+
+
+def git_squash_log(src, dst):
+    last_sha1 = git_last_commit(dst)
+    cmd = 'git log {}..{} --format=short --graph'.format(last_sha1, src)
     return runout(cmd)
 
 
-def get_git_log(branch, num):
-    cmd = 'git log {} -n {}'.format(branch, num)
+def git_log(sha1, num=1):
+    cmd = 'git log {} -n {}'.format(sha1, num)
     return runout(cmd)
 
 
@@ -70,46 +80,35 @@ def check_tag(name):
     return checkrun(cmd)
 
 
-def do(src, dst, message, version=None, dryrun=False, verbose=0):
-    print 'Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
+def git_commit(message):
+    import tempfile
+    f = tempfile.NamedTemporaryFile(suffix='_commit.log', delete=False)
+    f.write(message)
+    f.close()
 
-    def run(cmd):
-        print cmd
-        if not dryrun:
-            return subprocess.check_call(cmd)
-
-    if version and not check_tag(version):
-        run('git tag ' + version)
-
-    run('git checkout ' + dst)
-
-    if message:
-        if dryrun and verbose > 0:
-            print message
-        else:
-            open(COMMIT_LOG, 'wt').write(message)
-
-        run('git merge {} --no-ff --no-commit'.format(src))
-        run('git commit -F {}'.format(COMMIT_LOG))
-        run('git svn dcommit')
-
-        if not dryrun:
-            os.remove(COMMIT_LOG)
-
-    if version:
-        run('git svn tag ' + version)
-
-    if check_branch(src):
-        run('git checkout ' + src)
+    run('git commit -F {}'.format(f.name))
+    os.unlink(f.name)
 
 
-def main(**args):
-    dst = args.get('dst')
-    src = args.get('src')
-    message = args.get('message')
-    version = args.get('version')
-    tag = args.get('tag')
+def squash_commit(src, dst, message, version):
+    # log since last svn commit
+    if not message:
+        message = 'Squashed commit: ' + str(version) + '\n\n' + git_squash_log(src, dst).strip()
 
+    run('git merge {} --no-ff --no-commit'.format(src))
+    git_commit(message)
+    run('git svn dcommit')
+
+
+def step_commit(src, dst):
+    for c in git_commits(dst, src):
+        run('git merge {} --no-ff --no-commit'.format(c))
+        message = runout('git log --format="[svn] %s%n%b%n%n commit: %H" -n 1 ' + c)
+        git_commit(message)
+    run('git svn dcommit')
+
+
+def main(src, dst, message, version, tag, verbose, step):
     assert(src and dst)
 
     if not check_branch(src) and not check_tag(src):
@@ -120,23 +119,30 @@ def main(**args):
         print '[E] destination branch {} does not exist'.format(src)
         return
 
-    # log since last svn commit
-    slog = get_squash_log(src, dst).strip()
-    if not slog and not tag:
-        print '[W] Commit has been done.'
+    if not git_commits(dst, src) and not tag:
+        print '[W] No new commits.'
         return
 
     if not version and tag:
-        version = get_version(slog or get_git_log(src, 10))
+        version = get_version(runout('git log {}..{} --format=%s'.format(dst, src)))
 
-    if slog and not message:
-        if version:
-            message = 'Squashed commit: ' + version + '\n\n' + slog
-        else:
-            message = slog
+    print 'Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
 
-    return do(src, dst, message, version,
-              args.get('dryrun'), args.get('verbose'))
+    if version and not check_tag(version):
+        run('git tag ' + version)
+
+    run('git checkout ' + dst)
+
+    if step:
+        step_commit(src, dst)
+    else:
+        squash_commit(src, dst, message, version)
+
+    if version:
+        run('git svn tag ' + version)
+
+    if check_branch(src):
+        run('git checkout ' + src)
 
 
 if __name__ == '__main__':
@@ -157,6 +163,11 @@ if __name__ == '__main__':
                         help='version info, parsed from git log if None')
     parser.add_argument('--tag', '-t', action='store_true', default=False,
                         help='create git and svn tag, disabled by default')
+    parser.add_argument('--step', action='store_true',
+                        help='Merge to SVN branch step by step')
     args = parser.parse_args()
 
-    main(**vars(args))
+    dryrun = args.dryrun
+    kwargs = vars(args)
+    kwargs.pop('dryrun', None)
+    main(**kwargs)
