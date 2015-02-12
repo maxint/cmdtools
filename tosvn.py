@@ -22,7 +22,7 @@ def runout(cmd):
 
 
 def run(cmd):
-    print cmd
+    print '[C]', cmd
     if not dryrun:
         return subprocess.check_call(cmd)
 
@@ -92,6 +92,8 @@ def git_commit(message):
 
 def squash_commit(src, dst, message, version):
     # log since last svn commit
+    print '[I] Commits: '
+    print runout('git log {}..{} --oneline --graph'.format(dst, src)).strip()
     if not message:
         message = 'Squashed commit: ' + str(version) + '\n\n' + git_squash_log(src, dst).strip()
 
@@ -119,14 +121,14 @@ def main(src, dst, message, version, tag, verbose, step):
         print '[E] destination branch {} does not exist'.format(src)
         return
 
-    if not git_commits(dst, src) and not tag:
-        print '[W] No new commits.'
-        return
-
     if not version and tag:
         version = get_version(runout('git log {}..{} --format=%s'.format(dst, src)))
 
-    print 'Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
+    print '[I] Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
+
+    if not git_commits(dst, src) and not tag:
+        print '[W] No new commits, stop.'
+        return
 
     if version and not check_tag(version):
         run('git tag ' + version)
