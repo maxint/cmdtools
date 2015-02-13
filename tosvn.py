@@ -15,6 +15,7 @@ import os
 import re
 
 dryrun = False
+verbose = 0
 
 
 def runout(cmd):
@@ -51,14 +52,13 @@ def git_commits(start, end):
     return runout(cmd).split()
 
 
-def git_squash_log(src, dst):
-    last_sha1 = git_last_commit(dst)
-    cmd = 'git log {}..{} --format=short --graph'.format(last_sha1, src)
+def git_squash_log(start, end):
+    cmd = 'git log {}..{} --format=short --graph'.format(start, end)
     return runout(cmd)
 
 
-def git_log(sha1, num=1):
-    cmd = 'git log {} -n {}'.format(sha1, num)
+def git_log(revision, num=1):
+    cmd = 'git log {} -n {}'.format(revision, num)
     return runout(cmd)
 
 
@@ -94,23 +94,24 @@ def squash_commit(src, dst, message, version):
     # log since last svn commit
     print '[I] Commits: '
     print runout('git log {}..{} --oneline --graph'.format(dst, src)).strip()
+
     if not message:
-        message = 'Squashed commit: ' + str(version) + '\n\n' + git_squash_log(src, dst).strip()
+        message = 'Squashed commit: ' + str(version) + '\n\n' + git_squash_log(dst, src).strip()
 
     run('git merge {} --no-ff --no-commit'.format(src))
     git_commit(message)
     run('git svn dcommit')
 
 
-def step_commit(src, dst):
-    for c in git_commits(dst, src):
+def step_by_step_commit(commits):
+    for c in commits:
         run('git merge {} --no-ff --no-commit'.format(c))
         message = runout('git log --format="[svn] %B%ncommit: %H" -n 1 ' + c)
         git_commit(message)
     run('git svn dcommit')
 
 
-def main(src, dst, message, version, tag, verbose, step):
+def main(src, dst, message, version, tag, squashed):
     assert(src and dst)
 
     if not check_branch(src) and not check_tag(src):
@@ -126,25 +127,33 @@ def main(src, dst, message, version, tag, verbose, step):
 
     print '[I] Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
 
-    if not git_commits(dst, src) and not tag:
+    commits = git_commits(dst, src)
+    if not commits and not tag:
         print '[W] No new commits, stop.'
         return
 
+    # git tag
     if version and not check_tag(version):
         run('git tag ' + version)
 
-    run('git checkout ' + dst)
+    if version or commits:
+        # checkout to svn branch
+        run('git checkout ' + dst)
 
-    if step:
-        step_commit(src, dst)
-    else:
-        squash_commit(src, dst, message, version)
+        # commit
+        if commits:
+            if squashed:
+                squash_commit(src, dst, message, version)
+            else:
+                step_by_step_commit(commits)
 
-    if version:
-        run('git svn tag ' + version)
+        # svn tag
+        if version:
+            run('git svn tag ' + version)
 
-    if check_branch(src):
-        run('git checkout ' + src)
+        # back to original branch
+        if check_branch(src):
+            run('git checkout ' + src)
 
 
 if __name__ == '__main__':
@@ -152,12 +161,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Merge and commit git to svn')
     parser.add_argument('--src', '-s', nargs='?', default='dev',
-                        help='source branch or version [dev]')
-    parser.add_argument('--dst', nargs='?', default='master',
-                        help='destination branch attached with svn [master]')
+                        help='source revision, default is dev')
+    parser.add_argument('--dst', '-d', nargs='?', default='master',
+                        help='destination SVN branch, default is master')
     parser.add_argument('--message', '-m', nargs='?', default=None,
                         help='commit message')
-    parser.add_argument('--dryrun', '-d', action='store_true',
+    parser.add_argument('--dryrun', '-D', action='store_true',
                         help='do not run command')
     parser.add_argument('--verbose', '-V', type=int, nargs='?', default=0,
                         help='mesage verbose mode, default is 0')
@@ -165,11 +174,15 @@ if __name__ == '__main__':
                         help='version info, parsed from git log if None')
     parser.add_argument('--tag', '-t', action='store_true', default=False,
                         help='create git and svn tag, disabled by default')
-    parser.add_argument('--step', action='store_true',
-                        help='Merge to SVN branch step by step')
+    parser.add_argument('--squashed', '-Q', action='store_true',
+                        help='Merge to SVN branch with squashed log')
     args = parser.parse_args()
 
     dryrun = args.dryrun
+    verbose = args.verbose
+
     kwargs = vars(args)
     kwargs.pop('dryrun', None)
+    kwargs.pop('verbose', None)
+
     main(**kwargs)
