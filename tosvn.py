@@ -105,7 +105,7 @@ def squash_commit(src, dst, message, version):
 def step_commit(src, dst):
     for c in git_commits(dst, src):
         run('git merge {} --no-ff --no-commit'.format(c))
-        message = runout('git log --format="[svn] %s%n%b%n%n commit: %H" -n 1 ' + c)
+        message = runout('git log --format="[svn] %s%n%n    %b%n%n commit: %H" -n 1 ' + c)
         git_commit(message)
     run('git svn dcommit')
 
