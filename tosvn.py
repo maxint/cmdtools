@@ -31,7 +31,7 @@ def svn_url(branch):
     '''Get SVN url'''
     log = runout('git log {} -1 --format="%b"'.format(branch)).strip()
     m = re.search(r'git-svn-id:\s(?P<url>.*)@', log)
-    return m.group('url')
+    return m.group('url') if m else None
 
 
 def get_version(s):
@@ -105,7 +105,7 @@ def squash_commit(src, dst, message, version):
 def step_commit(src, dst):
     for c in git_commits(dst, src):
         run('git merge {} --no-ff --no-commit'.format(c))
-        message = runout('git log --format="[svn] %s%n%n    %b%n%n commit: %H" -n 1 ' + c)
+        message = runout('git log --format="[svn] %B%ncommit: %H" -n 1 ' + c)
         git_commit(message)
     run('git svn dcommit')
 
