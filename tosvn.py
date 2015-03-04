@@ -22,8 +22,9 @@ def runout(cmd):
     return subprocess.check_output(cmd)
 
 
-def run(cmd):
-    print '[C]', cmd
+def run(cmd, echo=True):
+    if echo:
+        print '[C]', cmd
     if not dryrun:
         return subprocess.check_call(cmd)
 
@@ -48,17 +49,22 @@ def git_last_commit(branch):
 
 
 def git_commits(start, end):
-    cmd = 'git log {}..{} --reverse --format=%H'.format(start, end)
+    cmd = 'git log {}..{} --reverse --format=%H --first-parent'.format(start, end)
     return runout(cmd).split()
 
 
 def git_squash_log(start, end):
-    cmd = 'git log {}..{} --format=short --graph'.format(start, end)
+    cmd = 'git log {}..{} --format=oneline --graph --first-parent'.format(start, end)
     return runout(cmd)
 
 
 def git_log(revision, num=1):
     cmd = 'git log {} -n {}'.format(revision, num)
+    return runout(cmd)
+
+
+def git_diff(sha1, sha2):
+    cmd = 'git diff --name-status {} {}'.format(sha1, sha2)
     return runout(cmd)
 
 
@@ -86,28 +92,37 @@ def git_commit(message):
     f.write(message)
     f.close()
 
-    run('git commit -F {}'.format(f.name))
+    run('git commit -F {}'.format(f.name), echo=False)
     os.unlink(f.name)
+
+
+def git_merge(dst, c, message, skip_empty=True):
+    diff = git_diff(dst, c)
+    print '[C] git merge {} ({})'.format(c[:7], message.split('\n', 1)[0])
+    if diff:
+        run('git merge {} --no-ff --no-commit'.format(c), echo=False)
+        git_commit(message)
+    else:
+        print '[W] Skip empty merge'
 
 
 def squash_commit(src, dst, message, version):
     # log since last svn commit
-    print '[I] Commits: '
+    print '[I] Commits:'
     print runout('git log {}..{} --oneline --graph'.format(dst, src)).strip()
 
     if not message:
-        message = 'Squashed commit: ' + str(version) + '\n\n' + git_squash_log(dst, src).strip()
+        message = 'Squashed commit: {}\n\n{}'.format(version or '',
+                                                     git_squash_log(dst, src).strip())
 
-    run('git merge {} --no-ff --no-commit'.format(src))
-    git_commit(message)
+    git_merge(dst, src, message)
     run('git svn dcommit')
 
 
-def step_by_step_commit(commits):
+def step_by_step_commit(dst, commits):
     for c in commits:
-        run('git merge {} --no-ff --no-commit'.format(c))
         message = runout('git log --format="[svn] %B%ncommit: %H" -n 1 ' + c)
-        git_commit(message)
+        git_merge(dst, c, message)
     run('git svn dcommit')
 
 
@@ -115,7 +130,7 @@ def main(src, dst, message, version, tag, squashed):
     assert(src and dst)
 
     if not check_branch(src) and not check_tag(src):
-        print '[E] source commit {} does not exist'.format(src)
+        print '[E] source object {} does not exist'.format(src)
         return
 
     if not check_branch(dst):
@@ -134,7 +149,7 @@ def main(src, dst, message, version, tag, squashed):
 
     # git tag
     if version and not check_tag(version):
-        run('git tag ' + version)
+        run('git tag {} {}'.format(version, src))
 
     if version or commits:
         # checkout to svn branch
@@ -145,7 +160,7 @@ def main(src, dst, message, version, tag, squashed):
             if squashed:
                 squash_commit(src, dst, message, version)
             else:
-                step_by_step_commit(commits)
+                step_by_step_commit(dst, commits)
 
         # svn tag
         if version:
