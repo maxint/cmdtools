@@ -138,7 +138,9 @@ def main(src, dst, message, version, tag, squashed):
         return
 
     if not version and tag:
-        version = get_version(runout('git log {}..{} --format=%s'.format(dst, src)))
+        logs = runout('git log {}..{} --format=%s'.format(dst, src))\
+               or runout('git log {} -n 10 --format=%s'.format(src))
+        version = get_version(logs)
 
     print '[I] Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
 
