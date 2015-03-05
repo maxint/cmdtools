@@ -6,3 +6,4 @@
 *.lnk
 .ropeproject
 /*.pyc
+/.idea
