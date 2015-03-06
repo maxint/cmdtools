@@ -5,20 +5,34 @@ import subprocess
 import os
 import glob
 
-def run(cmd):
-    subprocess.check_call(cmd)
+def run(cmd, **kwargs):
+    subprocess.check_call(cmd, **kwargs)
 
 
-def build_apk(project_dir):
-    print('[C] android update project')
-    run('E:/NDK/adt-bundle-windows-x86-20130219/sdk/tools/android.bat --silent update project --path ' + project_dir)
-    print('[C] ndk-build')
-    run('E:/NDK/android-ndk-r8e/ndk-build.cmd --silent -C ' + project_dir)
-    print('[C] ant debug')
-    run('E:/NDK/apache-ant-1.9.0/bin/ant.bat debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
+def build(project_dir, verbose=False):
+    def do(cmd):
+        run(cmd, stdout=subprocess.STDOUT if verbose else subprocess.PIPE)
+
+    if verbose:
+        print('[C] android update project')
+    do('E:/NDK/adt-bundle-windows-x86-20130219/sdk/tools/android.bat --silent update project --path ' + project_dir)
+
+    if verbose:
+        print('[C] ndk-build')
+    do('E:/NDK/android-ndk-r8e/ndk-build.cmd --silent -C ' + project_dir)
+
+    if verbose:
+        print('[C] ant debug')
+    do('E:/NDK/apache-ant-1.9.0/bin/ant.bat debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
+
+    return get_apk(project_dir)
+
+
+def get_apk(project_dir):
     paths = glob.glob(os.path.join(project_dir, 'bin', '*-debug.apk'))
     assert len(paths) == 1
     return paths[0]
+
 
 if __name__ == '__main__':
     import argparse
@@ -37,6 +51,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    path = build_apk(args.project_dir)
+    path = build(args.project_dir, True)
     print '[I] Final APK:', path
     print 'Done!'
