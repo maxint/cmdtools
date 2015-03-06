@@ -9,7 +9,7 @@ def run(cmd, **kwargs):
     subprocess.check_call(cmd, **kwargs)
 
 
-def build(project_dir, verbose=False):
+def build(project_dir, verbose=False, ndk_build=True):
     def do(cmd):
         run(cmd, stdout=subprocess.STDOUT if verbose else subprocess.PIPE)
 
@@ -17,9 +17,10 @@ def build(project_dir, verbose=False):
         print('[C] android update project')
     do('E:/NDK/adt-bundle-windows-x86-20130219/sdk/tools/android.bat --silent update project --path ' + project_dir)
 
-    if verbose:
-        print('[C] ndk-build')
-    do('E:/NDK/android-ndk-r8e/ndk-build.cmd --silent -C ' + project_dir)
+    if ndk_build:
+        if verbose:
+            print('[C] ndk-build')
+        do('E:/NDK/android-ndk-r8e/ndk-build.cmd --silent -C ' + project_dir)
 
     if verbose:
         print('[C] ant debug')
@@ -48,9 +49,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build APK')
     parser.add_argument('project_dir', action=readable, nargs='?', default='.',
                         help='APK project directory')
+    parser.add_argument('--noNDK', '-n', action='store_true',
+                        help='do not run ndk-build')
 
     args = parser.parse_args()
 
-    path = build(args.project_dir, True)
+    path = build(args.project_dir, True, not args.noNDK)
     print '[I] Final APK:', path
     print 'Done!'
