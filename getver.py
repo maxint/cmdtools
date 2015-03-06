@@ -39,8 +39,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Get ArcSoft versions in ZIP input')
     parser.add_argument('file', type=argparse.FileType('rb'),
                         help='Target file to extract versions')
+    parser.add_argument('-nogui', '-n', action='store_true',
+                        help='Do not show GUI message box')
 
     args = parser.parse_args()
 
-    for (name, version) in get_versions(args.file) or []:
-        print '{}: {}'.format(name, version)
+    versions = get_versions(args.file) or []
+    msg = map(lambda (name, version):'{}: {}'.format(name, version), versions)
+    msg = '\n'.join(msg)
+
+    print msg
+    if not args.nogui:
+        import tkMessageBox
+        from Tkinter import Tk
+        r = Tk()
+        r.withdraw()
+        name = os.path.basename(args.file.name)
+        tkMessageBox.showinfo('Versions in ' + name, msg)
+        r.destroy()
