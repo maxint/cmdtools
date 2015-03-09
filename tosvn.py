@@ -86,6 +86,10 @@ def check_tag(name):
     return checkrun(cmd)
 
 
+def current_branch():
+    return runout('git rev-parse --abbrev-ref HEAD').strip()
+
+
 def git_commit(message):
     import tempfile
     f = tempfile.NamedTemporaryFile(suffix='_commit.log', delete=False)
@@ -129,6 +133,7 @@ def step_by_step_commit(dst, commits):
 def main(src, dst, message, version, tag, squashed):
     assert(src and dst)
 
+    original_branch = current_branch()
     if not check_branch(src) and not check_tag(src):
         print '[E] source object {} does not exist'.format(src)
         return
@@ -169,8 +174,8 @@ def main(src, dst, message, version, tag, squashed):
             run('git svn tag ' + version)
 
         # back to original branch
-        if check_branch(src):
-            run('git checkout ' + src)
+        if original_branch:
+            run('git checkout ' + original_branch)
 
 
 if __name__ == '__main__':
