@@ -32,18 +32,16 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Convienient operations for git subtree command')
     subparsers = parser.add_subparsers()
+    parser.add_argument('prefix', help='direcotry prefix')
 
     addp = subparsers.add_parser('add')
-    addp.add_argument('--prefix')
     addp.add_argument('url', help='repository location')
     addp.set_defaults(func=do_add)
 
     pushp = subparsers.add_parser('push')
-    pushp.add_argument('--prefix')
     pushp.set_defaults(func=do_push)
 
     pullp = subparsers.add_parser('pull')
-    pullp.add_argument('--prefix')
     pullp.set_defaults(func=do_pull)
 
     args = parser.parse_args()
