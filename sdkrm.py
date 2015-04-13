@@ -10,7 +10,6 @@ examples:
 
 import os
 import shutil
-import tempfile
 import zipfile
 import glob
 
@@ -38,13 +37,13 @@ def sdk_rm(src_path, dst_file, *deletes):
 
 
 def sdk_rm_inplace(path, *deletes):
-    tmp_file = tempfile.NamedTemporaryFile(suffix='.ZIP')
+    tmp_path = '__TMP__' + path
     try:
-        sdk_rm(path, tmp_file, *deletes)
-        shutil.move(tmp_file.name, path)
+        sdk_rm(path, tmp_path, *deletes)
+        shutil.move(tmp_path, path)
     except:
-        os.unlink(tmp_file.name)
-    assert not os.path.exists(tmp_file.name)
+        os.unlink(tmp_path)
+    assert not os.path.exists(tmp_path)
 
 
 if __name__ == '__main__':
