@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 # coding: utf-8
 
+"""
+examples:
+    python sdkrm.py *.ZIP -d libarcsoft_face_tracking.so libarcsoft_face_detection.so
+"""
+
 import os
 import shutil
 import tempfile
