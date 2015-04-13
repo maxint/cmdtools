@@ -2,6 +2,8 @@
 # coding: utf-8
 
 """
+Delete given files and update release note in SDK ZIP file.
+
 examples:
     python sdkrm.py *.ZIP -d libarcsoft_face_tracking.so libarcsoft_face_detection.so
 """
