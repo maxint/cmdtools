@@ -16,8 +16,15 @@ import os
 import re
 
 
+def quote(path):
+    if ' ' in path:
+        return '"{}"'.format(path)
+    else:
+        return path
+
+
 def info(filename):
-    cmd = 'ffmpeg -i "{}" -hide_banner'.format(filename)
+    cmd = 'ffmpeg -i {} -hide_banner'.format(quote(filename))
     try:
         out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError, e:
@@ -78,7 +85,7 @@ if __name__ == '__main__':
     for src in files:
         print '[I] >> Converting "{}"...'.format(src)
         # ffmpeg cmd
-        cmd = 'ffmpeg -v warning -hide_banner -i {} -an'.format(src)
+        cmd = 'ffmpeg -v warning -hide_banner -i {} -an'.format(quote(src))
         cmd += ' -r ' + str(args.fps)
         # basename
         dst = get_target_filename(src, args.target_dir)
