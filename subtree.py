@@ -19,7 +19,7 @@ def do_add(args):
 
 
 def do_push(args):
-    run('git subtree push --prefix {0} {0}.git master --squash'.format(args.prefix))
+    run('git subtree push --prefix {0} {0}.git master'.format(args.prefix))
     do_pull(args)
 
 
