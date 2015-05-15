@@ -13,17 +13,18 @@ def build(project_dir, verbose=False, ndk_build=True):
     def do(cmd):
         run(cmd, stdout=subprocess.STDOUT if verbose else subprocess.PIPE)
 
-    if verbose:
-        print('[C] android update project')
+    def echo(msg):
+        if verbose:
+            print(msg)
+
+    echo('[C] android update project')
     do('E:/NDK/adt-bundle-windows-x86-20130219/sdk/tools/android.bat --silent update project --path ' + project_dir)
 
     if ndk_build:
-        if verbose:
-            print('[C] ndk-build')
+        echo('[C] ndk-build')
         do('E:/NDK/android-ndk-r8e/ndk-build.cmd --silent -C ' + project_dir)
 
-    if verbose:
-        print('[C] ant debug')
+    echo('[C] ant debug')
     do('E:/NDK/apache-ant-1.9.0/bin/ant.bat debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
 
     return get_apk(project_dir)

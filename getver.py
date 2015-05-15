@@ -23,11 +23,12 @@ def get_versions(file):
         zz = zipfile.ZipFile(file)
     except:
         print '[E] Invalid ZIP data stream'
+        return
 
     names = filter(is_library, zz.namelist())
     versions = []
     for name in names:
-        content = zz.open(name).read()
+        content = zz.read(name)
         v = full_version_with_date(content)
         if v:
             versions.append((name, v))
