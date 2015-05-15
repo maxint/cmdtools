@@ -49,11 +49,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build APK')
     parser.add_argument('project_dir', action=readable, nargs='?', default='.',
                         help='APK project directory')
+    parser.add_argument('--verbose', '-V', action='store_true')
     parser.add_argument('--noNDK', '-n', action='store_true',
                         help='do not run ndk-build')
 
     args = parser.parse_args()
 
-    path = build(args.project_dir, True, not args.noNDK)
+    path = build(args.project_dir, args.verbose, not args.noNDK)
     print '[I] Final APK:', path
     print 'Done!'
