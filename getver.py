@@ -5,8 +5,22 @@ import os
 import zipfile
 import re
 
+def split3(version_str):
+    """Split version numbers in version string, e.g.(0.1.2)"""
+    m = re.search(r"^(\d+).(\d+).(\d+)$", version_str)
+    if m:
+        return m.groups()[0:3]
+
+
+def split4(version_str):
+    """Split version numbers in version string, e.g.(0.1.2.3)"""
+    # e.g. ArcSoft_XXX_0.1.12018.125_log(dev Nov 17 2013 14:08:30)
+    m = re.search(r'(?:_|\b)(\d{1,3})\.(\d{1,3})\.(\d{1,5})\.(\d{1,4})(?:_|\b)', version_str)
+    if m:
+        return m.groups()[0:4]
+
 def full_version_with_date(content):
-    '''Get full version string with date (e.g. ArcSoft_XXX_0.1.12018.125_log(dev Nov 17 2013 14:08:30))'''
+    """Get full version string with date (e.g. ArcSoft_XXX_0.1.12018.125_log(dev Nov 17 2013 14:08:30))"""
     m = re.search(r'ArcSoft_[a-zA-z_]+_\d{1,3}\.\d{1,3}\.\d{1,5}\.\d{1,4}[_a-zA-Z0-9:\(\)\ ]*', content)
     return m.group(0) if m else None
 
