@@ -46,19 +46,26 @@ def convert_seconds(time):
 
 
 class Info(object):
-    def __init__(self, path):
+    def __init__(self, path, data=None, check_duration=True):
         command = [FFMPEG_BIN, '-hide_banner', '-i', path, '-']
-        pipe = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE)
+        pipe = sp.Popen(command, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+        if data:
+            pipe.stdin.write(data)
+            pipe.stdin.close()
         pipe.stdout.readline()
         pipe.terminate()
+
         for line in pipe.stderr.readlines():
             line = line.strip()
             if line.startswith('Stream #'):
                 if ' Video:' in line:
                     self._parse_video_stream(line)
-            elif line.startswith('Duration:'):
+            elif line.startswith('Duration:') and check_duration:
                 self._parse_duration(line)
-        self.nframes = (int(self.duration * self.fps) + 1) if self.fps else 0
+
+        if check_duration:
+            self.nframes = (int(self.duration * self.fps) + 1) if self.fps else 0
+
         del pipe
 
     def _parse_video_stream(self, line):
@@ -97,45 +104,56 @@ class Reader(object):
         return self.pipe.stdout.read(self.bytes_for_frame)
 
     def close(self):
-        self.pipe.terminate()
-        self.pipe.stdout.close()
-        if self.pipe.stderr:
-            self.pipe.stderr.close()
-        del self.pipe
+        if hasattr(self, 'pipe'):
+            self.pipe.terminate()
+            self.pipe.stdout.close()
+            if self.pipe.stderr:
+                self.pipe.stderr.close()
+            del self.pipe
 
     def __del__(self):
         self.close()
 
 
 class Writer(object):
-    def __init__(self, path, size, fps=25.0,
+    def __init__(self, path, size, in_fps=25.0,
                  in_vcodec='rawvideo', in_pix_fmt='bgr24',
-                 out_vcodec='libx264', out_pix_fmt='yuv420p'):
+                 out_fps=None, out_vcodec='h264', out_pix_fmt='yuv420p'):
         command = [
             FFMPEG_BIN,
             '-hide_banner',
             '-y',   # (optional) overwrite output file if it exists
             '-s', '%dx%d' % (size[0], size[1]),
-            '-r', '%.02f' % fps,  # frames per second
-            '-f', 'rawvideo',
+            '-r', '%.02f' % in_fps,  # frames per second
+            '-f', 'image2pipe',  # 'rawvideo',
             '-vcodec', in_vcodec,
             '-pix_fmt', in_pix_fmt,
             '-i', '-',  # input comes from a pipe
             '-an',  # no audio
+            '-r', '%.02f' % (out_fps or in_fps),  # frames per second
             '-vcodec', out_vcodec,
             '-pix_fmt', out_pix_fmt,
             path,
         ]
+        self.path = path
         self.pipe = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
 
     def write(self, data):
-        self.pipe.stdin.write(data)
+        try:
+            self.pipe.stdin.write(data)
+        except IOError as err:
+            ffmpeg_error = self.pipe.stderr.read()
+            error = (str(err) + ("\n\nMoviePy error: FFMPEG encountered "
+                                 "the following error while writing file %s:"
+                                 "\n\n %s" % (self.path, ffmpeg_error)))
+            raise IOError(error)
 
     def close(self):
-        self.pipe.stdin.close()
-        self.pipe.stderr.close()
-        self.pipe.wait()
-        del self.pipe
+        if hasattr(self, 'pipe'):
+            self.pipe.stdin.close()
+            self.pipe.stderr.close()
+            self.pipe.wait()
+            del self.pipe
 
     def __del__(self):
         self.close()
