@@ -5,7 +5,6 @@ import subprocess
 import glob
 import os
 
-
 TMP_DIR = '/data/tmp'
 
 
@@ -14,9 +13,9 @@ def call(cmd):
     subprocess.check_call(cmd)
 
 
-def parse_file_patterns(patts):
+def parse_file_patterns(patterns):
     files = []
-    for patt in patts:
+    for patt in patterns:
         if '*' in patt:
             files.extend(glob.glob(patt))
         elif os.path.isfile(patt):
@@ -35,7 +34,8 @@ def run(path):
     call('adb shell chmod 777 ' + dst)
     call('adb shell ' + dst)
 
-if __name__ == '__main__':
+
+def test():
     import sys
 
     files = parse_file_patterns(sys.argv[1:])
@@ -44,3 +44,7 @@ if __name__ == '__main__':
         call('adb root on')
         call('adb shell mkdir -p ' + TMP_DIR)
         map(run, files)
+
+
+if __name__ == '__main__':
+    test()
