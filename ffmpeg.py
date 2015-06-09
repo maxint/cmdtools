@@ -166,8 +166,7 @@ class Writer(object):
     def close(self):
         if hasattr(self, 'pipe'):
             self.pipe.stdin.close()
-            if self.pipe.stderr:
-                self.pipe.stderr.close()
+            self.nb_stderr.close()
             self.pipe.wait()
             del self.pipe
 

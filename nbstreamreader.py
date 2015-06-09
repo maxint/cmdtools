@@ -17,14 +17,15 @@ def populate_queue(stream, queue):
         if line:
             queue.put(line)
         else:
-            raise UnexpectedEndOfStream
+            break
+            # raise UnexpectedEndOfStream
 
 
 class NonBlockingStreamReader:
     def __init__(self, stream):
         """
-        stream: the stream to read from.
-                Usually a process' stdout or stderr.
+        :param stream: the stream to read from. Usually a process' stdout or stderr.
+        :type stream: io.RawIO
         """
 
         self._s = stream
@@ -33,6 +34,10 @@ class NonBlockingStreamReader:
         self._t = Thread(target=populate_queue, args=(self._s, self._q))
         self._t.daemon = True
         self._t.start()  # start collecting lines from the stream
+
+    def close(self):
+        self._t.join()
+        self._s.close()
 
     def readline(self, timeout=None):
         try:
