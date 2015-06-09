@@ -6,6 +6,7 @@ http://zulko.github.io/blog/2013/09/27/read-and-write-video-frames-in-python-usi
 
 import re
 import subprocess as sp
+from nbstreamreader import NonBlockingStreamReader as NBSR
 
 FFMPEG_BIN = 'ffmpeg'
 
@@ -80,14 +81,15 @@ class Info(object):
 
     def _parse_duration(self, line):
         m = re.search(r'Duration: ([.:\d]+), start: ([.\d]+), bitrate: (\d+) kb/s', line)
-        self.duration = convert_seconds(m.group(1))
-        self.start = float(m.group(2))
-        self.bitrate = int(m.group(3))
+        if m:
+            self.duration = convert_seconds(m.group(1))
+            self.start = float(m.group(2))
+            self.bitrate = int(m.group(3))
 
 
 class Reader(object):
-    def __init__(self, path, vcodec='rawvideo', pix_fmt='bgr24'):
-        self.info = Info(path)
+    def __init__(self, path, data=None, vcodec='rawvideo', pix_fmt='bgr24'):
+        self.info = Info(path, data)
         command = [
             FFMPEG_BIN,
             '-hide_banner',
@@ -97,11 +99,22 @@ class Reader(object):
             '-pix_fmt', pix_fmt,
             '-',
         ]
-        self.pipe = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, bufsize=10**8)
+        self.pipe = sp.Popen(command, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE, bufsize=10**8)
         self.bytes_for_frame = self.info.size[0] * self.info.size[1] * 3
+        self.path = path
+        if data:
+            self.pipe.stdin.write(data)
+            self.pipe.stdin.close()
 
     def read(self):
-        return self.pipe.stdout.read(self.bytes_for_frame)
+        try:
+            return self.pipe.stdout.read(self.bytes_for_frame)
+        except IOError as err:
+            ffmpeg_error = self.pipe.stderr.read()
+            error = (str(err) + ("\n\nFFMPEG error: FFMPEG encountered "
+                                 "the following error while writing file %s:"
+                                 "\n\n %s" % (self.path, ffmpeg_error)))
+            raise IOError(error)
 
     def close(self):
         if hasattr(self, 'pipe'):
@@ -125,7 +138,7 @@ class Writer(object):
             '-y',   # (optional) overwrite output file if it exists
             '-s', '%dx%d' % (size[0], size[1]),
             '-r', '%.02f' % in_fps,  # frames per second
-            '-f', 'image2pipe',  # 'rawvideo',
+            '-f', 'rawvideo' if in_vcodec == 'rawvideo' else 'image2pipe',  # image2pipe for image stream
             '-vcodec', in_vcodec,
             '-pix_fmt', in_pix_fmt,
             '-i', '-',  # input comes from a pipe
@@ -137,13 +150,15 @@ class Writer(object):
         ]
         self.path = path
         self.pipe = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
+        self.nb_stderr = NBSR(self.pipe.stderr)
 
     def write(self, data):
         try:
+            self.nb_stderr.read(0.1)
             self.pipe.stdin.write(data)
         except IOError as err:
-            ffmpeg_error = self.pipe.stderr.read()
-            error = (str(err) + ("\n\nMoviePy error: FFMPEG encountered "
+            ffmpeg_error = self.nb_stderr.read()
+            error = (str(err) + ("\n\nFFMPEG error: FFMPEG encountered "
                                  "the following error while writing file %s:"
                                  "\n\n %s" % (self.path, ffmpeg_error)))
             raise IOError(error)
@@ -151,7 +166,8 @@ class Writer(object):
     def close(self):
         if hasattr(self, 'pipe'):
             self.pipe.stdin.close()
-            self.pipe.stderr.close()
+            if self.pipe.stderr:
+                self.pipe.stderr.close()
             self.pipe.wait()
             del self.pipe
 
