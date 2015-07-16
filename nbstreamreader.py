@@ -11,14 +11,11 @@ class UnexpectedEndOfStream(Exception):
 def populate_queue(stream, queue):
     """
     Collect lines from 'stream' and put them in 'queue'.
+    :type stream: file
+    :type queue: Queue
     """
-    while True:
-        line = stream.readline()
-        if line:
-            queue.put(line)
-        else:
-            break
-            # raise UnexpectedEndOfStream
+    for line in iter(stream.readline, b''):
+        queue.put(line)
 
 
 class NonBlockingStreamReader:
@@ -32,7 +29,7 @@ class NonBlockingStreamReader:
         self._q = Queue()
 
         self._t = Thread(target=populate_queue, args=(self._s, self._q))
-        self._t.daemon = True
+        self._t.daemon = True  # thread dies with the program
         self._t.start()  # start collecting lines from the stream
 
     def close(self):
