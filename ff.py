@@ -13,7 +13,7 @@ Convert video files to specific format.
 import glob
 import subprocess
 import os
-import re
+import ffmpeg
 
 
 def quote(path):
@@ -23,25 +23,15 @@ def quote(path):
         return path
 
 
-def info(filename):
-    cmd = 'ffmpeg -i {} -hide_banner'.format(quote(filename))
-    try:
-        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError, e:
-        out = e.output
-    m = re.search(r'Video: [^,]+, [^,]+, (\d+)x(\d+)(?=\s[^,]+,|,)', out)
-    return int(m.group(1)), int(m.group(2))
-
-
 def get_target_filename(src, target_dir=None):
     if target_dir is not None:
         src = os.path.join(target_dir, os.path.basename(src))
     return os.path.splitext(src)[0]
 
 
-def parse_file_patterns(patts):
+def parse_file_patterns(patterns):
     files = []
-    for patt in patts:
+    for patt in patterns:
         if '*' in patt:
             files.extend(glob.glob(patt))
         elif os.path.isfile(patt):
@@ -51,6 +41,50 @@ def parse_file_patterns(patts):
 
     # unique list
     return list(set(files))
+
+
+def convert_video(src_path, target_dir, ext, fps=None, max_height=None, time_off=None, duration=None,
+                  verbose=False, dryrun=False, force=False):
+    info = ffmpeg.Info(src_path)
+    # ffmpeg cmd
+    cmd = 'ffmpeg -v warning -hide_banner -i {} -an -pix_fmt yuv420p'.format(quote(src_path))
+    if fps:
+        cmd += ' -r ' + str(fps)
+
+    # basename
+    dst_path = get_target_filename(src_path, target_dir)
+
+    # frame size
+    w, h = info.size
+    if max_height is not None and max_height < h:
+        nw = max_height * w / h
+        nh = max_height
+        cmd += ' -s {}x{}'.format(nw, nh)
+        print '[I] Resize from {}x{} to {}x{}'.format(w, h, nw, nh)
+        w = nw
+        h = nh
+
+    # destination file
+    dst_path += '_{}x{}.{}'.format(w, h, ext)
+    print '[I] Destination file: ' + dst_path
+
+    # clip interval
+    if time_off is not None:
+        cmd += ' -ss ' + str(time_off)
+    if duration is not None:
+        cmd += ' -t ' + str(duration)
+
+    # check existence of destination
+    if not os.path.exists(dst_path) or force:
+        cmd += ' "{}"'.format(dst_path)
+        if verbose:
+            print '[D] Ruining "{}"'.format(cmd)
+        if not dryrun:
+            subprocess.check_call(cmd)
+    else:
+        print '[W] Skip existed destination file'
+
+    return dst_path, w, h
 
 
 if __name__ == '__main__':
@@ -75,44 +109,16 @@ if __name__ == '__main__':
                         help='the start time offset in seconds')
     parser.add_argument('-t', '--duration', type=float, default=None,
                         help='duration in seconds')
-    parser.add_argument('-r', '--fps', type=float, default=30,
+    parser.add_argument('-r', '--fps', type=float, default=None,
                         help='frame rate')
     args = parser.parse_args()
 
     # input files
     files = parse_file_patterns(args.files)
 
+    kwargs = vars(args)
+    kwargs.pop('files')
+
     for src in files:
         print '[I] >> Converting "{}"...'.format(src)
-        # ffmpeg cmd
-        cmd = 'ffmpeg -v warning -hide_banner -i {} -an'.format(quote(src))
-        cmd += ' -r ' + str(args.fps)
-        # basename
-        dst = get_target_filename(src, args.target_dir)
-        # frame size
-        w, h = info(src)
-        if args.max_height is not None and args.max_height < h:
-            nw = args.max_height * w / h
-            nh = args.max_height
-            cmd += ' -s {}x{}'.format(nw, nh)
-            print '[I] Resize from {}x{} to {}x{}'.format(w, h, nw, nh)
-            w = nw
-            h = nh
-        # clip interval
-        if args.time_off is not None:
-            cmd += ' -ss ' + str(args.time_off)
-        if args.duration is not None:
-            cmd += ' -t ' + str(args.duration)
-        # destination file
-        dst += '_{}x{}.{}'.format(w, h, args.ext)
-        print '[I] Destination file: ' + dst
-        if os.path.exists(dst):
-            print '[W] Destination file has existd'
-        if not os.path.exists(dst) or args.force:
-            cmd += ' "{}"'.format(dst)
-            if args.verbose:
-                print '[D] Runinging "{}"'.format(cmd)
-            if not args.dryrun:
-                subprocess.check_call(cmd)
-        else:
-            print '[W] Skip existed destination file'
+        convert_video(src, **kwargs)
