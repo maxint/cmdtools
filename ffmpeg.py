@@ -131,7 +131,7 @@ class Reader(object):
 class Writer(object):
     def __init__(self, path, size, in_fps=25.0,
                  in_vcodec='rawvideo', in_pix_fmt='bgr24',
-                 out_fps=None, out_vcodec='h264', out_pix_fmt='yuv420p'):
+                 out_fps=None, out_vcodec='h264', out_pix_fmt='yuvj420p'):
         command = [
             FFMPEG_BIN,
             '-hide_banner',

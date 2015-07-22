@@ -47,7 +47,7 @@ def convert_video(src_path, target_dir, ext, fps=None, max_height=None, time_off
                   verbose=False, dryrun=False, force=False):
     info = ffmpeg.Info(src_path)
     # ffmpeg cmd
-    cmd = 'ffmpeg -v warning -hide_banner -i {} -an -pix_fmt yuv420p'.format(quote(src_path))
+    cmd = 'ffmpeg -v warning -hide_banner -i {} -an -pix_fmt yuvj420p'.format(quote(src_path))
     if fps:
         cmd += ' -r ' + str(fps)
 
