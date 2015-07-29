@@ -134,6 +134,8 @@ def main(src, dst, message, version, tag, squashed):
     assert(src and dst)
 
     original_branch = current_branch()
+    if original_branch:
+        print '[I] Current branch: {}'.format(original_branch)
     if not check_branch(src) and not check_tag(src):
         print '[E] source object {} does not exist'.format(src)
         return
@@ -147,7 +149,7 @@ def main(src, dst, message, version, tag, squashed):
                or runout('git log {} -n 10 --format=%s'.format(src))
         version = get_version(logs)
 
-    print '[I] Commit version {} to SVN ({})'.format(str(version), svn_url(dst))
+    print '[I] Commit version {} to SVN branch "{}" ({})'.format(str(version), dst, svn_url(dst))
 
     commits = git_commits(dst, src)
     if not commits and not tag:
@@ -160,7 +162,8 @@ def main(src, dst, message, version, tag, squashed):
 
     if version or commits:
         # checkout to svn branch
-        run('git checkout ' + dst)
+        if original_branch != dst:
+            run('git checkout ' + dst)
 
         # commit
         if commits:
@@ -174,7 +177,7 @@ def main(src, dst, message, version, tag, squashed):
             run('git svn tag ' + version)
 
         # back to original branch
-        if original_branch:
+        if original_branch and original_branch != dst:
             run('git checkout ' + original_branch)
 
 
