@@ -1,7 +1,5 @@
-#! /usr/bin/env python
-# coding:utf-8
-# Copyright (C) 2015 maxint <NOT_SPAM_lnychina@gmail.com>
-# Distributed under terms of the MIT license.
+# coding: utf-8
+# author: maxint <NOT_SPAM_lnychina@gmail.com>
 
 """
 Create svn repository and create git repository based on it.

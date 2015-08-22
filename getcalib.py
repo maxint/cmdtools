@@ -1,5 +1,5 @@
-#! /usr/bin/env python
 # coding: utf-8
+# author: maxint <NOT_SPAM_lnychina@gmail.com>
 
 """ Get custom camera calibration file from OpenCV camera calibration file.
 

@@ -1,4 +1,5 @@
 # coding: utf-8
+# author: maxint <NOT_SPAM_lnychina@gmail.com>
 
 """
 http://zulko.github.io/blog/2013/09/27/read-and-write-video-frames-in-python-using-ffmpeg/

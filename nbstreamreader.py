@@ -1,4 +1,5 @@
 # coding: utf-8
+# author: maxint <NOT_SPAM_lnychina@gmail.com>
 
 from threading import Thread
 from Queue import Queue, Empty

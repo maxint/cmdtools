@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 # coding: utf-8
+# author: maxint <NOT_SPAM_lnychina@gmail.com>
 
 """
 Git subtree manage commands.
