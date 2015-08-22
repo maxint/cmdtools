@@ -1,6 +1,6 @@
 # coding: utf-8
 # author: maxint <NOT_SPAM_lnychina@gmail.com>
-# version: 0.1
+# version: 0.2
 
 """
 Generate compare result between ground true and tracking result.
@@ -97,21 +97,27 @@ def main():
 
     parser = argparse.ArgumentParser(description='Compare rectangles in files')
     parser.add_argument('source', nargs='?', default='.', type=readable_dir,
-                        help='source data directory')
-    parser.add_argument('--overlap',
-                        choices=['rect', 'pos'], default='rect',
-                        help='overlap function')
+                        help='tracking result and / or mark files directory (default is current directory)')
+    parser.add_argument('--overlap', '-o',
+                        choices=['rect', 'position'], default='rect',
+                        help='overlap function (default is position)')
     parser.add_argument('--threshold', '-t',
                         type=restricted_float(0.1, 0.9), default=0.5,
-                        help='overlap threshold')
+                        help='overlap threshold (default is 0.5)')
+    parser.add_argument('--marks', '-m', nargs='?', default=None, type=readable_dir,
+                        help='mark files directory (default is the same as --source)')
     args = parser.parse_args()
 
     import glob
-    txt_paths = glob.glob(os.path.join(args.source, '*.txt'))
-    mark_paths = filter(lambda p : p.endswith('_fingerMark.txt'), txt_paths)
-    result_paths = list(set(txt_paths) - set(mark_paths))
+    result_paths = glob.glob(os.path.join(args.source, '*.txt'))
+    if args.marks:
+        mark_paths = glob.glob(os.path.join(args.marks, '*_fingerMark.txt'))
+    else:
+        mark_paths = filter(lambda p : p.endswith('_fingerMark.txt'), result_paths)
+        result_paths = list(set(result_paths) - set(mark_paths))
 
-    assert len(mark_paths) == len(result_paths), "The number of mark files and result files are not equal!"
+    if len(mark_paths) != len(result_paths):
+        raise Exception("The number of mark files (%d) and result files (%d) are not equal!" % (len(mark_paths), len(result_paths)))
 
     if len(mark_paths) == 0:
         print '[W] No mark file is found in %s!' % args.source
@@ -122,16 +128,19 @@ def main():
 
     import rect
     # determine overlap function
-    overlap_fn = dict(rect=overlap, pos=overlap_only_pos)[args.overlap]
-    summary_path = os.path.join(args.source, 'summary.csv')
+    overlap_fn = dict(rect=overlap, position=overlap_only_pos)[args.overlap]
+    summary_path = os.path.join(args.marks or args.source, 'summary.csv')
     all_results = []
 
     for mark_path, result_path in zip(mark_paths, result_paths):
-        print '[I] Comparing %s with %s' % (mark_path, result_path)
-        mark_path_no_ext = os.path.splitext(mark_path)[0]
-        cmp_path = mark_path_no_ext + '.csv'
+        print '[I] Comparing ' + mark_path
+        print '    with ' + result_path
+        result_path_no_ext = os.path.splitext(result_path)[0]
+        cmp_path = result_path_no_ext + '.csv'
         marks = rect.load(mark_path)
         result = rect.load(result_path)
+        if len(result) < len(marks):
+            result += [rect.Rect()] * (len(marks) - len(result))
         cmp_result = compare(marks, result, overlap_fn)
         res = save_compare(cmp_path, cmp_result, args.threshold)
         all_results.append(res)

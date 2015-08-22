@@ -1,6 +1,6 @@
 # coding: utf-8
 # author: maxint <NOT_SPAM_lnychina@gmail.com>
-# version: 0.1
+# version: 0.2
 
 """
 Generate compare result between ground true and tracking result for Object Tracking project.
@@ -72,11 +72,11 @@ def main():
     parser.add_argument('--source', '-s', default=MOBILE_DIR,
                         help='source data path in android device')
     parser.add_argument('--overlap',
-                        choices=['rect', 'pos'], default='pos',
-                        help='overlap function')
+                        choices=['rect', 'position'], default='position',
+                        help='overlap function (default is position)')
     parser.add_argument('--threshold', '-t',
                         type=restricted_float(0.1, 0.9), default=0.5,
-                        help='overlap threshold')
+                        help='overlap threshold (default is 0.5)')
     args = parser.parse_args()
 
     data_dir = 'data'

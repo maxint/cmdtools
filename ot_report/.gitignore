@@ -1,4 +1,7 @@
-/data*/*
+data/
+marks/
+result/
+
 .idea/
 ### Python template
 # Byte-compiled / optimized / DLL files

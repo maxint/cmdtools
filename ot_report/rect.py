@@ -1,6 +1,6 @@
 # coding: utf-8
 # author: maxint <NOT_SPAM_lnychina@gmail.com>
-
+# version: 0.2
 
 class Rect:
     def __init__(self, left=0, top=0, right=0, bottom=0):
@@ -95,7 +95,7 @@ e.g.
 ...
 """
 
-MARK_PARSER_RE = re.compile(r'^\d+.*\s+\((\d+),(\d+),(\d+),(\d+)\)$')
+MARK_PARSER_RE = re.compile(r'^\d+[\s,\(\)0-9]*\s+\((-?\d+),(-?\d+),(-?\d+),(-?\d+)\)$')
 """
 e.g.
 0	(0,0,0)	(564,459,760,740)
@@ -153,7 +153,7 @@ def load_marks(lines, verbose=True):
     return data
 
 
-def filter_marks(idx_rcs):
+def filter_marks(idx_rcs, allow_skip_frame=True):
     rcs = []
     for idx, rc in idx_rcs:
         if idx == len(rcs):
@@ -161,6 +161,8 @@ def filter_marks(idx_rcs):
         elif idx == len(rcs) - 1:
             # replace old one
             rcs[idx] = rc
+        elif allow_skip_frame:
+            rcs += [Rect()] * (idx - len(rcs) +1)
         else:
             raise Exception('Wrong index: ' + str(idx))
     return rcs
