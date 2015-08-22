@@ -31,8 +31,12 @@ def get_unused_path(path):
     return res_path
 
 
-def main(dst_path, overlap_fn, overlap_threshold=0.5):
+def run_compare(dst_path, overlap_fn, overlap_threshold=0.5):
     mark_paths = get_mark_paths(dst_path)
+    if len(mark_paths) == 0:
+        print '[W] No mark file is found!'
+        return
+
     summary_path = os.path.join(dst_path, 'summary.csv')
     all_results = []
     for mark_path in mark_paths:
@@ -48,7 +52,7 @@ def main(dst_path, overlap_fn, overlap_threshold=0.5):
     rect_compare.save_summary(summary_path, all_results)
 
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     def restricted_float(start, end):
@@ -84,7 +88,9 @@ if __name__ == '__main__':
 
     # determine overlap function
     overlap_fn = dict(rect=rect_compare.overlap, pos=rect_compare.overlap_only_pos)[args.overlap]
-    main(data_dir, overlap_fn, args.threshold)
+    run_compare(data_dir, overlap_fn, args.threshold)
 
-    os.system('pause')
     print 'Done!'
+
+if __name__ == '__main__':
+    main()

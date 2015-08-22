@@ -105,6 +105,10 @@ def main():
 
     assert len(mark_paths) == len(result_paths), "The number of mark files and result files are not equal!"
 
+    if len(mark_paths) == 0:
+        print '[W] No mark file is found!'
+        return
+
     mark_paths.sort()
     result_paths.sort()
 
@@ -126,8 +130,6 @@ def main():
         all_results.append(res)
 
     save_summary(summary_path, all_results)
-
-    os.system('pause')
     print 'Done!'
 
 if __name__ == '__main__':
