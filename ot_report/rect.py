@@ -95,7 +95,7 @@ e.g.
 ...
 """
 
-MARK_PARSER_RE = re.compile(r'^\d+\s\S*\s+\((\d+),(\d+),(\d+),(\d+)\)$')
+MARK_PARSER_RE = re.compile(r'^\d+.*\s+\((\d+),(\d+),(\d+),(\d+)\)$')
 """
 e.g.
 0	(0,0,0)	(564,459,760,740)
@@ -103,6 +103,13 @@ e.g.
 2	(0,0,0)	(564,459,760,740)
 3	(0,0,0)	(564,459,760,740)
 4	(0,0,0)	(564,459,760,740)
+...
+or
+0	(564,459,760,740)
+1	(564,459,760,740)
+2	(564,459,760,740)
+3	(564,459,760,740)
+4	(564,459,760,740)
 ...
 """
 
@@ -152,6 +159,7 @@ def filter_marks(idx_rcs):
         if idx == len(rcs):
             rcs.append(rc)
         elif idx == len(rcs) - 1:
+            # replace old one
             rcs[idx] = rc
         else:
             raise Exception('Wrong index: ' + str(idx))
@@ -159,9 +167,12 @@ def filter_marks(idx_rcs):
 
 
 def load(path):
-    is_marks = path.endswith('_fingerMark.txt')
-    parser = parse_rect_with_index if is_marks else parse_rect
     with open(path) as f:
+        line = f.readline()
+        f.seek(0)
+        # check whether it's in mark format
+        is_marks = re.match(MARK_PARSER_RE, line) != None
+        parser = parse_rect_with_index if is_marks else parse_rect
         data = map(parser, f)
         return filter_marks(data) if is_marks else data
 
