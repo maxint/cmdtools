@@ -82,13 +82,21 @@ def main():
         def impl(x):
             x = float(x)
             if x < start or x > end:
-                msg = "%r not in range [%r, %r]".format(x, start, end)
+                msg = "%r not in range [%r, %r]" % (x, start, end)
                 raise argparse.ArgumentTypeError(msg)
             return x
         return impl
 
+    def readable_dir(path):
+        if not os.path.isdir(path):
+            raise argparse.ArgumentTypeError("{0} is not a valid directory".format(path))
+        if not os.access(path, os.R_OK):
+            raise argparse.ArgumentTypeError("{0} is not a readable dir".format(path))
+        return path
+
+
     parser = argparse.ArgumentParser(description='Compare rectangles in files')
-    parser.add_argument('--source', '-s', default='.',
+    parser.add_argument('source', nargs='?', default='.', type=readable_dir,
                         help='source data directory')
     parser.add_argument('--overlap',
                         choices=['rect', 'pos'], default='rect',
@@ -106,7 +114,7 @@ def main():
     assert len(mark_paths) == len(result_paths), "The number of mark files and result files are not equal!"
 
     if len(mark_paths) == 0:
-        print '[W] No mark file is found!'
+        print '[W] No mark file is found in %s!' % args.source
         return
 
     mark_paths.sort()
@@ -121,8 +129,7 @@ def main():
     for mark_path, result_path in zip(mark_paths, result_paths):
         print '[I] Comparing %s with %s' % (mark_path, result_path)
         mark_path_no_ext = os.path.splitext(mark_path)[0]
-        result_path = mark_path_no_ext + '_res.txt'
-        cmp_path = mark_path_no_ext + '_res.csv'
+        cmp_path = mark_path_no_ext + '.csv'
         marks = rect.load(mark_path)
         result = rect.load(result_path)
         cmp_result = compare(marks, result, overlap_fn)

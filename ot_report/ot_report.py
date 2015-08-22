@@ -59,7 +59,7 @@ def main():
         def impl(x):
             x = float(x)
             if x < start or x > end:
-                msg = "%r not in range [%r, %r]".format(x, start, end)
+                msg = "%r not in range [%r, %r]" % (x, start, end)
                 raise argparse.ArgumentTypeError(msg)
             return x
         return impl
@@ -77,8 +77,6 @@ def main():
     parser.add_argument('--threshold', '-t',
                         type=restricted_float(0.1, 0.9), default=0.5,
                         help='overlap threshold')
-    parser.add_argument('--quiet', action='store_true', default=False,
-                        help='no warning')
     args = parser.parse_args()
 
     data_dir = 'data'
