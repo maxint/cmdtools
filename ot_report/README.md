@@ -7,7 +7,14 @@
 
 - Python2.7 (\\maxint-w7\DEVELOP\python\python-2.7.3.msi)
 
-# 操作说明
+# 程序
 
-运行：$ ot_report.py
-帮助：$ ot_report.py -h
+- `ot_report.py`： OT 结果比较程序，支持从手机指定目录下载跟踪结果文件。
+- `rect_compare.py`：通用矩形框比较工具，自动比较指定目录下的所有`<name>_fingerMark.txt`和`<name>_*.txt`文件对。
+
+# 帮助
+
+```
+ot_report.py -h
+rect_compare.py -h
+```

@@ -86,7 +86,25 @@ class Rect:
 import re
 
 DOT_PARSER_RE = re.compile(r'^(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)$')
+"""
+e.g.
+332, 379, 738, 858
+317, 381, 723, 860
+300, 381, 706, 860
+284, 393, 690, 872
+...
+"""
+
 MARK_PARSER_RE = re.compile(r'^\d+\s\S*\s+\((\d+),(\d+),(\d+),(\d+)\)$')
+"""
+e.g.
+0	(0,0,0)	(564,459,760,740)
+1	(0,0,0)	(564,459,760,740)
+2	(0,0,0)	(564,459,760,740)
+3	(0,0,0)	(564,459,760,740)
+4	(0,0,0)	(564,459,760,740)
+...
+"""
 
 
 def parse_rect(line, pattern=DOT_PARSER_RE):
@@ -141,7 +159,7 @@ def filter_marks(idx_rcs):
 
 
 def load(path):
-    is_marks = path.endswith('fingerMark.txt')
+    is_marks = path.endswith('_fingerMark.txt')
     parser = parse_rect_with_index if is_marks else parse_rect
     with open(path) as f:
         data = map(parser, f)
