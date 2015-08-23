@@ -129,7 +129,7 @@ def main():
     import rect
     # determine overlap function
     overlap_fn = dict(rect=overlap, position=overlap_only_pos)[args.overlap]
-    summary_path = os.path.join(args.marks or args.source, 'summary.csv')
+    summary_path = os.path.join(args.source, 'summary.csv')
     all_results = []
 
     for mark_path, result_path in zip(mark_paths, result_paths):
