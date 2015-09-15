@@ -8,7 +8,7 @@ import zipfile
 import apk
 import getver
 
-def getABI(project_dir):
+def get_ABI_name(project_dir):
     # check libs/
     names = os.listdir(os.path.join(project_dir, 'libs'))
     if len(names) == 1 and names[0].startswith('armeabi'):
@@ -24,9 +24,13 @@ def getABI(project_dir):
     return 'armeabi'
 
 
+def get_native_lib_path(project_dir):
+    return os.path.join(project_dir, 'libs', get_ABI_name(project_dir))
+
+
 def build(project_dir, sdk_path, verbose=False, ndk_build=False):
     # get libs path
-    lib_dir = os.path.join(project_dir, 'libs', getABI(project_dir))
+    lib_dir = get_native_lib_path(project_dir)
     if not os.path.exists(lib_dir):
         os.makedirs(lib_dir)
 
