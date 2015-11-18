@@ -31,13 +31,24 @@ def create_svn_layout(url, msg):
         pass
 
 
-def create_svn(url):
+def create_svn_layout_no_parent(url, msg):
     try:
-        run('svnadmin create ' + url)
+        cmd = 'svn mkdir {0}/trunk {0}/branches {0}/tags'.format(url)
+        cmd += ' -m "' + msg + '" --parents'
+        run(cmd, 'svn mkdir %s/{trunk,branches,tags}' % url)
     except subprocess.CalledProcessError:
         pass
     finally:
+        pass
+
+
+def create_svn(url):
+    try:
         create_svn_layout(url, 'Add new project (%s)' % url)
+    except subprocess.CalledProcessError:
+        pass
+    finally:
+        create_svn_layout_no_parent(url, 'Add new project (%s)' % url)
 
 
 def create_git(url):
@@ -51,9 +62,10 @@ def create_git(url):
         # run('git svn rebase')
 
 
-def main(url):
+def main(url, git):
     create_svn(url)
-    create_git(url)
+    if git:
+        create_git(url)
 
 if __name__ == '__main__':
     import argparse
@@ -61,9 +73,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create svn/git repository')
     parser.add_argument('--dryrun', '-d', action='store_true',
                         help='do not run command')
+    parser.add_argument('--git', '-g', action='store_true',
+                        help='create git resposity')
     parser.add_argument('svnurl',
                         help='SVN location')
 
     args = parser.parse_args()
     dryrun = args.dryrun
-    main(args.svnurl)
+    main(args.svnurl, args.git)
