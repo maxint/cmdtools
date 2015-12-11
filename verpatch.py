@@ -12,7 +12,7 @@ import os
 
 def patch(path, verbose=False):
     text = open(path, 'rb').read()
-    m = re.search(r'(ArcSoft_[a-zA-z_]+)_(\d{1,3}\.\d{1,3}\.\d{1,5}\.\d{1,4})[_a-zA-Z0-9:\(\)\ ]*[^\d]*(\d{1,2}/\d{1,2}/\d{4,4}).*(Copyright[\w\s\d,.]+)', text)
+    m = re.search(r'(ArcSoft_[0-9a-zA-z_]+)_(\d{1,3}\.\d{1,3}\.\d{1,5}\.\d{1,4})[_a-zA-Z0-9:\(\)\ ]*[^\d]*(\d{1,2}/\d{1,2}/\d{4,4}).*(Copyright[\w\s\d,.]+)', text)
     product = m.group(1).replace('_', ' ')
     version = m.group(2)
     date = m.group(3)
