@@ -187,7 +187,7 @@ def test():
             count += 1
         else:
             break
-    print 'Frame number: (%d / %d)' % (video_reader.info.nframes, count)
+    print('Frame number: (%d / %d)' % (video_reader.info.nframes, count))
 
 
 if __name__ == '__main__':

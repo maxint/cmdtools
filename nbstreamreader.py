@@ -2,7 +2,10 @@
 # author: maxint <NOT_SPAM_lnychina@gmail.com>
 
 from threading import Thread
-from Queue import Queue, Empty
+try:
+    from Queue import Queue, Empty
+except ImportError:
+    from queue import Queue, Empty
 
 
 class UnexpectedEndOfStream(Exception):
