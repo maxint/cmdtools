@@ -7,6 +7,12 @@ import glob
 import re
 import shutil
 
+
+android_exec = 'E:/NDK/android-sdk/tools/android.bat'
+ndk_build_exec = 'E:/NDK/android-ndk-r10d/ndk-build.cmd'
+ant_exec = 'E:/NDK/apache-ant/bin/ant.bat'
+
+
 def run(cmd, **kwargs):
     subprocess.check_call(cmd, **kwargs)
 
@@ -16,7 +22,23 @@ def is_library(project_dir):
     return re.search(r'\nandroid\.library=true\s*\n', open(path).read()) is not None
 
 
+def get_reference_libraries(project_dir):
+    project_properties_path = os.path.join(project_dir, 'project.properties')
+    if not os.path.exists(project_properties_path):
+        return
+
+    paths = []
+    for line in open(project_properties_path).readlines():
+        m = re.search(r'android\.library.reference\.\d+=([^\n]*)', line)
+        if m:
+            paths.append(m.group(1))
+    return paths
+
+
 def build(project_dir, verbose=False, ndk_build=True):
+    for path in get_reference_libraries(project_dir):
+        build(os.path.join(project_dir, path), verbose, ndk_build)
+
     def do(cmd):
         if verbose:
             print '    ' + cmd
@@ -37,17 +59,16 @@ def build(project_dir, verbose=False, ndk_build=True):
         shutil.rmtree(bin_dir)
 
     echo('[C] android update project')
-    if is_lib:
-        do('E:/NDK/android-sdk/tools/android.bat --silent update lib-project --path ' + project_dir)
-    else:
-        do('E:/NDK/android-sdk/tools/android.bat --silent update project --path ' + project_dir)
+    cmd = android_exec + ' --silent update {} --path {}'
+    cmd = cmd.format('lib-project' if is_lib else 'project', project_dir)
+    do(cmd)
 
     if ndk_build:
         echo('[C] ndk-build')
-        do('E:/NDK/android-ndk-r10d/ndk-build.cmd --silent -C ' + project_dir)
+        do(ndk_build_exec + ' --silent -C ' + project_dir)
 
     echo('[C] ant debug')
-    do('E:/NDK/apache-ant/bin/ant.bat debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
+    do(ant_exec + ' debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
 
     return get_output(project_dir, is_lib)
 
