@@ -47,7 +47,7 @@ def build(project_dir, verbose=False, ndk_build=True):
         do('E:/NDK/android-ndk-r10d/ndk-build.cmd --silent -C ' + project_dir)
 
     echo('[C] ant debug')
-    do('E:/NDK/apache-ant-1.9.0/bin/ant.bat debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
+    do('E:/NDK/apache-ant/bin/ant.bat debug -silent -f ' + os.path.join(project_dir, 'build.xml'))
 
     return get_output(project_dir, is_lib)
 
