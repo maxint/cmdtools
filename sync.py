@@ -47,13 +47,13 @@ def find_paths(directory, ignores_fn, ignores_dn):
                 yield os.path.relpath(os.path.join(root, basename), directory)
 
 
-def sync(source, destination, ignores_fn, ignores_dn):
+def sync(source, destination, ignores_fn, ignores_dn, copy_only):
     if os.path.realpath(source) == os.path.realpath(destination):
         logger.warn('Ignore when source and destination are the same: %s', source)
         return
 
     src_paths = set(find_paths(source, ignores_fn, ignores_dn))
-    dst_paths = set(find_paths(destination, ignores_fn, ignores_dn))
+    dst_paths = set(find_paths(destination, ignores_fn + copy_only, ignores_dn))
     uni_paths = src_paths.intersection(dst_paths)
     del_paths = dst_paths - uni_paths
     add_paths = src_paths - uni_paths
@@ -70,7 +70,7 @@ def sync(source, destination, ignores_fn, ignores_dn):
             if not os.path.exists(dst):
                 logger.info('Create directory: %s', dst)
                 if not dry_run: os.makedirs(dst)
-        else:
+        elif not os.path.exists(dst) or os.path.getmtime(dst) < os.path.getmtime(src):
             logger.info('Copy file: %s -> %s', src, dst)
             if not dry_run:
                 if (not os.path.exists(os.path.dirname(dst))):
@@ -95,14 +95,13 @@ def sync(source, destination, ignores_fn, ignores_dn):
     path_do(sorted(uni_paths), do_union_path)
 
 
-def sync_all(source, destinations, ignores_fn, ignores_dn):
+def sync_all(source, destinations, ignores_fn, ignores_dn, copy_only):
     logger.info('-'*60)
     logger.info('Source directory: %s', source)
     logger.info('Destination directories: %s', str(destinations))
     if destinations is None:
-        sync(source, '.', ignores_fn, ignores_dn)
-    else:
-        map(lambda d: sync(source, d, ignores_fn, ignores_dn), destinations)
+        destinations = ['.']
+    map(lambda d: sync(source, d, ignores_fn, ignores_dn, copy_only or []), destinations)
 
 
 def main():
@@ -117,6 +116,8 @@ def main():
                         help='Ignore patterns for file name')
     parser.add_argument('-I', '--ignore_dn', nargs='*', default=['.*'],
                         help='Ignore patterns for directory')
+    parser.add_argument('-c', '--copy_only', nargs='*',
+                        help='Items to be copyed only')
     parser.add_argument('-D', '--dry_run', action='store_true',
                         help='Print operations without do them')
     args = parser.parse_args()
@@ -125,7 +126,7 @@ def main():
     dry_run = args.dry_run
     setup_logging(logger)
 
-    sync_all(args.source, args.destination, args.ignore_fn, args.ignore_dn)
+    sync_all(args.source, args.destination, args.ignore_fn, args.ignore_dn, args.copy_only)
 
     print 'Done!'
 
