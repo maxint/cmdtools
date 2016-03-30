@@ -24,11 +24,19 @@ def get_target_filename(src, target_dir=None):
     return os.path.splitext(src)[0]
 
 
-def parse_file_patterns(patterns):
+def filename_not_endswith_resolution(path):
+    import re
+    return re.match(r'.*_\d{1,4}[xX]\d{1,4}\.\w+', path) is None
+
+
+def parse_file_patterns(patterns, no_ignore):
     files = []
     for patt in patterns:
         if '*' in patt:
-            files.extend(glob.glob(patt))
+            new_files = glob.glob(patt)
+            if not no_ignore:
+                new_files = filter(filename_not_endswith_resolution, new_files)
+            files.extend(new_files)
         elif os.path.isfile(patt):
             files.append(patt)
         else:
@@ -106,13 +114,16 @@ if __name__ == '__main__':
                         help='duration in seconds')
     parser.add_argument('-r', '--fps', type=float, default=None,
                         help='frame rate')
+    parser.add_argument('-I', '--no_ignore', action='store_true', default=False,
+                        help='Do not ignore converted files (**_*x*.*)')
     args = parser.parse_args()
 
     # input files
-    files = parse_file_patterns(args.files)
+    files = parse_file_patterns(args.files, args.no_ignore)
 
     kwargs = vars(args)
     kwargs.pop('files')
+    kwargs.pop('no_ignore')
 
     for src in files:
         print '[I] >> Converting "{}"...'.format(src)
