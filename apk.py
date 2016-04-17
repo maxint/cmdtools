@@ -95,11 +95,11 @@ if __name__ == '__main__':
     parser.add_argument('project_dir', action=readable, nargs='?', default='.',
                         help='APK project directory')
     parser.add_argument('--verbose', '-V', action='store_true')
-    parser.add_argument('--noNDK', '-n', action='store_true',
+    parser.add_argument('--no_ndk_build', '-n', action='store_true',
                         help='do not run ndk-build')
 
     args = parser.parse_args()
 
-    path = build(args.project_dir, args.verbose, not args.noNDK)
+    path = build(args.project_dir, args.verbose, not args.no_ndk_build)
     print '[I] Final output:', path
     print 'Done!'
