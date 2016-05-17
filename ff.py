@@ -9,6 +9,7 @@ import glob
 import subprocess
 import os
 import ffmpeg
+import logging
 
 
 def quote(path):
@@ -40,7 +41,7 @@ def parse_file_patterns(patterns, no_ignore):
         elif os.path.isfile(patt):
             files.append(patt)
         else:
-            print '[E] Unknown input file: "{}"'.format(patt)
+            logging.error('Unknown input file: "{}"'.format(patt))
 
     # unique list
     return list(set(files))
@@ -63,13 +64,13 @@ def convert_video(src_path, target_dir, ext, fps=None, max_height=None, time_off
         nw = max_height * w / h
         nh = max_height
         cmd += ' -s {}x{}'.format(nw, nh)
-        print '[I] Resize from {}x{} to {}x{}'.format(w, h, nw, nh)
+        logging.info('Resize from {}x{} to {}x{}'.format(w, h, nw, nh))
         w = nw
         h = nh
 
     # destination file
     dst_path += '_{}x{}.{}'.format(w, h, ext)
-    print '[I] Destination file: ' + dst_path
+    logging.info('Destination file: %s', dst_path)
 
     # clip interval
     if time_off is not None:
@@ -81,16 +82,16 @@ def convert_video(src_path, target_dir, ext, fps=None, max_height=None, time_off
     if not os.path.exists(dst_path) or force:
         cmd += ' "{}"'.format(dst_path)
         if verbose:
-            print '[D] Ruining "{}"'.format(cmd)
+            logging.debug('Ruining "{}"'.format(cmd))
         if not dryrun:
             subprocess.check_call(cmd)
     else:
-        print '[W] Skip existed destination file'
+        logging.warning('Skip existed destination file: %s', dst_path)
 
     return dst_path, w, h
 
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(description='Convert videos with ffmpeg')
@@ -118,6 +119,9 @@ if __name__ == '__main__':
                         help='Do not ignore converted files (**_*x*.*)')
     args = parser.parse_args()
 
+    logging.basicConfig(format='[%(levelname)-1.1s] %(message)s',
+                        level=logging.DEBUG if args.verbose else logging.INFO)
+
     # input files
     files = parse_file_patterns(args.files, args.no_ignore)
 
@@ -125,6 +129,10 @@ if __name__ == '__main__':
     kwargs.pop('files')
     kwargs.pop('no_ignore')
 
-    for src in files:
-        print '[I] >> Converting "{}"...'.format(src)
+    total = len(files)
+    for i, src in enumerate(files):
+        logging.info('[{}/{}] Converting "{}"...'.format(i+1, total, src))
         convert_video(src, **kwargs)
+
+if __name__ == '__main__':
+    main()
