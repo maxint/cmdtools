@@ -47,13 +47,11 @@ def parse_file_patterns(patterns, no_ignore):
     return list(set(files))
 
 
-def convert_video(src_path, target_dir, ext, fps=None, max_height=None, time_off=None, duration=None,
-                  verbose=False, dryrun=False, force=False):
+def convert_video(src_path, target_dir, ext, max_height=None,
+                  verbose=False, dryrun=False, force=False, output_arguments=None):
     info = ffmpeg.Info(src_path)
     # ffmpeg cmd
     cmd = 'ffmpeg -v warning -hide_banner -i {} -an -pix_fmt yuv420p'.format(quote(src_path))
-    if fps:
-        cmd += ' -r ' + str(fps)
 
     # basename
     dst_path = get_target_filename(src_path, target_dir)
@@ -72,17 +70,15 @@ def convert_video(src_path, target_dir, ext, fps=None, max_height=None, time_off
     dst_path += '_{}x{}.{}'.format(w, h, ext)
     logging.info('Destination file: %s', dst_path)
 
-    # clip interval
-    if time_off is not None:
-        cmd += ' -ss ' + str(time_off)
-    if duration is not None:
-        cmd += ' -t ' + str(duration)
+    # more ffmpeg arguments
+    if output_arguments:
+        cmd += output_arguments
 
     # check existence of destination
     if not os.path.exists(dst_path) or force:
-        cmd += ' "{}"'.format(dst_path)
+        cmd += ' {}'.format(quote(dst_path))
         if verbose:
-            logging.debug('Ruining "{}"'.format(cmd))
+            logging.debug('Ruining: {}'.format(cmd))
         if not dryrun:
             subprocess.check_call(cmd)
     else:
@@ -109,14 +105,10 @@ def main():
                         help='override exist file')
     parser.add_argument('-m', '--max_height', type=int, default=None,
                         help='max height for output video')
-    parser.add_argument('-ss', '--time_off', type=float, default=None,
-                        help='the start time offset in seconds')
-    parser.add_argument('-t', '--duration', type=float, default=None,
-                        help='duration in seconds')
-    parser.add_argument('-r', '--fps', type=float, default=None,
-                        help='frame rate')
     parser.add_argument('-I', '--no_ignore', action='store_true', default=False,
                         help='Do not ignore converted files (**_*x*.*)')
+    parser.add_argument('-O', '--output-arguments',
+                        help='extra output arguments for ffmpeg')
     args = parser.parse_args()
 
     logging.basicConfig(format='[%(levelname)-1.1s] %(message)s',
