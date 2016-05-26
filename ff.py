@@ -53,6 +53,9 @@ def convert_video(src_path, target_dir, ext, max_height=None,
     # ffmpeg cmd
     cmd = 'ffmpeg -v warning -hide_banner -i {} -an -pix_fmt yuv420p'.format(quote(src_path))
 
+    if src_path.lower().endswith('.avi'):
+        cmd += ' -c:v libx264 -crf 18 -preset slow'
+
     # basename
     dst_path = get_target_filename(src_path, target_dir)
 
@@ -76,7 +79,7 @@ def convert_video(src_path, target_dir, ext, max_height=None,
 
     # check existence of destination
     if not os.path.exists(dst_path) or force:
-        cmd += ' {}'.format(quote(dst_path))
+        cmd += ' {} -y'.format(quote(dst_path))
         if verbose:
             logging.debug('Ruining: {}'.format(cmd))
         if not dryrun:
@@ -97,7 +100,7 @@ def main():
                         help='input video files, default is "*.avi"')
     parser.add_argument('-d', '--target_dir', default=None,
                         help='target directory, default is source directory')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+    parser.add_argument('-V', '--verbose', action='store_true', default=False,
                         help='show convert commands')
     parser.add_argument('-D', '--dryrun', action='store_true', default=False,
                         help='do not run command')
