@@ -48,7 +48,7 @@ if __name__ == '__main__':
     cmd = 'dumpbin /exports "{}"'.format(args.dll)
     out = runout(cmd)
 
-    func_names = re.findall(r'\s+\d{1,2}\s+\d{1,2} [\dA-Z]{8} (\w+)', out)
+    func_names = re.findall(r'\s+\d{1,2}\s+[0-9A-F]{1,2} [\dA-Z]{8} (\w+)[\r\n]', out)
     with open(def_path, 'wt') as f:
         f.write('\n'.join(['EXPORTS'] + func_names))
 
