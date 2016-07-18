@@ -48,13 +48,19 @@ def parse_file_patterns(patterns, no_ignore):
 
 
 def convert_video(src_path, target_dir, ext, max_height=None,
-                  verbose=False, dryrun=False, force=False, output_arguments=None):
+                  verbose=False, dryrun=False, force=False,
+                  input_arguments=None,
+                  output_arguments=None):
     info = ffmpeg.Info(src_path)
     # ffmpeg cmd
     cmd = 'ffmpeg -v warning -hide_banner -i {} -an -pix_fmt yuv420p'.format(quote(src_path))
 
-    if src_path.lower().endswith('.avi'):
+    if os.path.splitext(src_path)[1].lower() in ['.avi', '.wmv']:
         cmd += ' -c:v libx264 -crf 18 -preset slow'
+
+    # input ffmpeg arguments
+    if input_arguments:
+        cmd += input_arguments
 
     # basename
     dst_path = get_target_filename(src_path, target_dir)
@@ -73,7 +79,7 @@ def convert_video(src_path, target_dir, ext, max_height=None,
     dst_path += '_{}x{}.{}'.format(w, h, ext)
     logging.info('Destination file: %s', dst_path)
 
-    # more ffmpeg arguments
+    # output ffmpeg arguments
     if output_arguments:
         cmd += output_arguments
 
@@ -98,7 +104,7 @@ def main():
                         help='extension of destination file, default is "mp4"')
     parser.add_argument('files', nargs='*', default=['*.avi'],
                         help='input video files, default is "*.avi"')
-    parser.add_argument('-d', '--target_dir', default=None,
+    parser.add_argument('-d', '--target-dir', default=None,
                         help='target directory, default is source directory')
     parser.add_argument('-V', '--verbose', action='store_true', default=False,
                         help='show convert commands')
@@ -108,8 +114,10 @@ def main():
                         help='override exist file')
     parser.add_argument('-m', '--max_height', type=int, default=None,
                         help='max height for output video')
-    parser.add_argument('-I', '--no_ignore', action='store_true', default=False,
+    parser.add_argument('-N', '--no-ignore', action='store_true', default=False,
                         help='Do not ignore converted files (**_*x*.*)')
+    parser.add_argument('-I', '--input-arguments',
+                        help='extra input arguments for ffmpeg')
     parser.add_argument('-O', '--output-arguments',
                         help='extra output arguments for ffmpeg')
     args = parser.parse_args()
