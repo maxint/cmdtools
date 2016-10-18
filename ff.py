@@ -102,8 +102,8 @@ def main():
     parser = argparse.ArgumentParser(description='Convert videos with ffmpeg')
     parser.add_argument('-e', '--ext', nargs='?', default='mp4',
                         help='extension of destination file, default is "mp4"')
-    parser.add_argument('files', nargs='*', default=['*.avi'],
-                        help='input video files, default is "*.avi"')
+    parser.add_argument('files', nargs='+',
+                        help='input video files or file patterns, e.g. *.avi')
     parser.add_argument('-d', '--target-dir', default=None,
                         help='target directory, default is source directory')
     parser.add_argument('-V', '--verbose', action='store_true', default=False,
