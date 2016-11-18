@@ -14,7 +14,7 @@ def setup_logging(logger, log_filename=None):
     if log_filename is None:
         log_filename = logger.name + '.log'
 
-    formatter = logging.Formatter('%(name)-8s %(asctime)s [%(levelname)-5s] %(message)s', '%a, %d %b %Y %H:%M:%S')
+    formatter = logging.Formatter('%(name)-5s %(asctime)s [%(levelname)-5s] %(message)s', '%a, %d %b %Y %H:%M:%S')
     file_handler = logging.FileHandler(log_filename)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
